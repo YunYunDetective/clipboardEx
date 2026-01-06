@@ -430,6 +430,100 @@ public:
 		return dibhandle;
 	}
 
+	// クリップボードにテキストを設定する
+	static void setText(ttstr text) {
+		clipboard_data_array datum;
+
+		try {
+			datum.push_back(ClipboardData(CF_TEXT, createAnsiTextData(text)));
+			datum.push_back(ClipboardData(CF_UNICODETEXT, createUnicodeTextData(text)));
+			setDatum(datum);
+		}
+		catch (...) {
+			for (clipboard_data_array::iterator i = datum.begin();
+				 i != datum.end();
+				 i++)
+				GlobalFree(i->hData);
+			throw;
+		}
+	}
+
+	// クリップボードからテキストを取得する
+	static bool ClipboardGetText(ttstr & text)
+	{
+		if(!::OpenClipboard(NULL)) return false;
+
+		bool result = false;
+		try
+			{
+				// select CF_UNICODETEXT or CF_TEXT
+				UINT formats[2] = { CF_UNICODETEXT, CF_TEXT};
+				int format = ::GetPriorityClipboardFormat(formats, 2);
+
+				if(format == CF_UNICODETEXT)
+					{
+						// try to read unicode text
+						HGLOBAL hglb = (HGLOBAL)::GetClipboardData(CF_UNICODETEXT);
+						if(hglb != NULL)
+							{
+								const tjs_char *p = (const tjs_char *)::GlobalLock(hglb);
+								if(p)
+									{
+										try
+											{
+												text = ttstr(p);
+												result = true;
+											}
+										catch(...)
+											{
+												::GlobalUnlock(hglb);
+												throw;
+											}
+										::GlobalUnlock(hglb);
+									}
+							}
+					}
+				else if(format == CF_TEXT)
+					{
+						// try to read ansi text
+						HGLOBAL hglb = (HGLOBAL)::GetClipboardData(CF_TEXT);
+						if(hglb != NULL)
+							{
+								const char *p = (const char *)::GlobalLock(hglb);
+								if(p)
+									{
+										try
+											{
+												text = ttstr(p);
+												result = true;
+											}
+										catch(...)
+											{
+												::GlobalUnlock(hglb);
+												throw;
+											}
+										::GlobalUnlock(hglb);
+									}
+							}
+					}
+			}
+		catch(...)
+			{
+				::CloseClipboard();
+				throw;
+			}
+		::CloseClipboard();
+
+		return result;
+	}
+
+	static ttstr getText() {
+		ttstr result;
+		ClipboardGetText(result);
+		return result;
+	}
+
+
 	// クリップボードにTJS式を設定する
 	static void setTJS(tTJSVariant data) {
 		clipboard_data_array datum;
@@ -646,6 +740,7 @@ NCB_ATTACH_CLASS(ClipboardEx, Clipboard)
 {
 	NCB_PROPERTY(appKey, getAppKey, setAppKey);
 	NCB_METHOD(hasFormat);
+	NCB_PROPERTY(asTextAlt, getText, setText);
 	NCB_PROPERTY(asTJS, getTJS, setTJS);
 	NCB_METHOD(setAsBitmap);
 	NCB_METHOD(getAsBitmap);
@@ -787,7 +882,7 @@ NCB_ATTACH_CLASS_WITH_HOOK(WindowClipboardEx, Window) {
 //----------------------------------------------------------------------
 // DLL登録時に呼び出すファンクション
 //----------------------------------------------------------------------
-static void RegistCallback(void)
+static void PreRegistCallback(void)
 {
 	// アプリケーションキー生成
 	sAppKey = new ttstr();
@@ -817,14 +912,27 @@ static void RegistCallback(void)
 	}
 }
 
+static void PostRegistCallback(void)
+{
+	// asTextを置き換え
+	TVPExecuteScript(L"&Clipboard.asTextOrig = &Clipboard.asText;");
+	TVPExecuteScript(L"&Clipboard.asText = &Clipboard.asTextAlt;");
+}
 
 // 登録
-NCB_PRE_REGIST_CALLBACK(RegistCallback);
+NCB_PRE_REGIST_CALLBACK(PreRegistCallback);
+NCB_POST_REGIST_CALLBACK(PostRegistCallback);
 
 
 //----------------------------------------------------------------------
 // DLL解放時に呼び出すファンクション
 //----------------------------------------------------------------------
+static void PreUnregistCallback(void)
+{
+	// asTextを復帰
+	TVPExecuteScript(L"&Clipboard.asText = &Clipboard.asTextOrig;");
+}
+
 static void TJS_USERENTRY tryDeleteConst(void *data)
 {
 	// 定数を削除
@@ -836,7 +944,7 @@ static bool TJS_USERENTRY catchDeleteConst(void *data, const tTVPExceptionDesc &
 	return false;
 }
 
-static void UnregistCallback(void)
+static void PostUnregistCallback(void)
 {
 	delete sAppKey;
 	sAppKey = nullptr;
@@ -851,4 +959,5 @@ static void UnregistCallback(void)
 
 
 // 登録
-NCB_POST_UNREGIST_CALLBACK(UnregistCallback);
+NCB_POST_UNREGIST_CALLBACK(PreUnregistCallback);
+NCB_POST_UNREGIST_CALLBACK(PostUnregistCallback);

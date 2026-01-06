@@ -31,7 +31,7 @@ class Clipboard
 
 	/**
 	 * クリップボードにテキストを登録する、もしくは取り出す
-	 *  @description 取得に失敗したらvoidを返す。
+	 * @description 取得に失敗したらvoidを返す。吉里吉里/吉里吉里Zの不具合を修正し、確実にコピーが出来るようになる。
 	 * @param text 登録するテキスト
 	 * @return 取り出したテキスト
 	 */

@@ -367,7 +367,7 @@ public:
 		tjs_int width, height;
 		width = obj.GetValue(L"imageWidth",	 ncbTypedefs::Tag<tjs_int>());
 		height = obj.GetValue(L"imageHeight",  ncbTypedefs::Tag<tjs_int>());
-		const tjs_uint8 *imageBuffer = (tjs_uint8*)obj.GetValue(L"mainImageBuffer", ncbTypedefs::Tag<tjs_int>());
+		const tjs_uint8 *imageBuffer = (tjs_uint8*)obj.GetValue(L"mainImageBuffer", ncbTypedefs::Tag<tjs_int64>());
 		tjs_int imagePitch = obj.GetValue(L"mainImageBufferPitch", ncbTypedefs::Tag<tjs_int>());
 		tjs_int pixelWidth = (width * 3 + 4 - 1) / 4 * 4;
 		tjs_int pixelSize = pixelWidth * height;
@@ -405,7 +405,7 @@ public:
 		tjs_int width, height;
 		width = obj.GetValue(L"imageWidth",	 ncbTypedefs::Tag<tjs_int>());
 		height = obj.GetValue(L"imageHeight",  ncbTypedefs::Tag<tjs_int>());
-		const tjs_uint8 *imageBuffer = (tjs_uint8*)obj.GetValue(L"mainImageBuffer", ncbTypedefs::Tag<tjs_int>());
+		const tjs_uint8 *imageBuffer = (tjs_uint8*)obj.GetValue(L"mainImageBuffer", ncbTypedefs::Tag<tjs_int64>());
 		tjs_int imagePitch = obj.GetValue(L"mainImageBufferPitch", ncbTypedefs::Tag<tjs_int>());
 		tjs_int pixelSize = width * height * 4;
 
@@ -523,7 +523,7 @@ public:
 						obj.SetValue(L"imageHeight", height);
 						obj.SetValue(L"width", width);
 						obj.SetValue(L"height", height);
-						unsigned char *imageBuffer = (unsigned char*)obj.GetValue(L"mainImageBufferForWrite", ncbTypedefs::Tag<tjs_int>());
+						unsigned char *imageBuffer = (unsigned char*)obj.GetValue(L"mainImageBufferForWrite", ncbTypedefs::Tag<tjs_int64>());
 						tjs_int imagePitch = obj.GetValue(L"mainImageBufferPitch", ncbTypedefs::Tag<tjs_int>());
 
 						for (tjs_int y = 0; y < height; y++) {
@@ -550,7 +550,7 @@ public:
 					obj.SetValue(L"imageHeight", height);
 					obj.SetValue(L"width", width);
 					obj.SetValue(L"height", height);
-					unsigned char *imageBuffer = (unsigned char*)obj.GetValue(L"mainImageBufferForWrite", ncbTypedefs::Tag<tjs_int>());
+					unsigned char *imageBuffer = (unsigned char*)obj.GetValue(L"mainImageBufferForWrite", ncbTypedefs::Tag<tjs_int64>());
 					tjs_int imagePitch = obj.GetValue(L"mainImageBufferPitch", ncbTypedefs::Tag<tjs_int>());
 
 					BITMAPINFO dstbmpinfo;
@@ -701,8 +701,8 @@ public:
 	void registerReceiver(bool enable) {
 		// レシーバ更新
 		tTJSVariant mode	= enable ? (tTVInteger)(tjs_int)wrmRegister : (tTVInteger)(tjs_int)wrmUnregister;
-		tTJSVariant proc	 = (tTVInteger)(tjs_int)MyReceiverHook;
-		tTJSVariant userdata = (tTVInteger)(tjs_int)objthis;
+		tTJSVariant proc	 = (tTVInteger)(tjs_int64)MyReceiverHook;
+		tTJSVariant userdata = (tTVInteger)(tjs_int64)objthis;
 		tTJSVariant *p[3] = {&mode, &proc, &userdata};
 		objthis->FuncCall(0, L"registerMessageReceiver", NULL, NULL, 3, p, objthis);
 	}
@@ -712,7 +712,7 @@ public:
 		// メッセージチェインに参加
 		tTJSVariant hwndValue;
 		objthis->PropGet(0, TJS_W("HWND"), NULL, &hwndValue, objthis);
-		curHWND = reinterpret_cast<HWND>(tjs_int(hwndValue));
+		curHWND = reinterpret_cast<HWND>(tjs_int64(hwndValue));
 		nextHWND = SetClipboardViewer(curHWND);
 	}
 
